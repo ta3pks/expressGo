@@ -3,7 +3,7 @@ package express
 import (
 	"net/http"
 
-	"github.com/julienschmidt/httprouter"
+	"github.com/nikosEfthias/httpRouter"
 )
 
 type route struct {

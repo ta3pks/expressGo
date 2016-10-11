@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	rtr "github.com/julienschmidt/httprouter"
+	rtr "github.com/nikosEfthias/httpRouter"
 )
 
 //__ROUTER
