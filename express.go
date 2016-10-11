@@ -9,67 +9,42 @@ import (
 
 //__ROUTER
 
-type Params interface{}
-type NextFunc func() Handle
-//TODO:  Change signature of middlewares so user does not have to write nextfync and return for actual Handle
-type Handle func(http.ResponseWriter, *http.Request, Params, NextFunc) Handle
-
-//Route describes the requirements of each subroute
-type Route struct {
-	Path   string
-	Method string
-	Func   []Handle
-}
-
-func iterateMiddleWare(handlers *[]Handle, res http.ResponseWriter, req *http.Request, prm Params) Handle {
-	if len(*handlers) == 1 {
-		return (*handlers)[0]
+func iterateMiddleWare(middleWares *[]MiddleWare, handler Handle, res http.ResponseWriter, req *http.Request, prm Params) Handle {
+	if len(*middleWares) == 0 {
+		return handler
 	}
-	maxIndex := len(*handlers) - 1
-	for index, val := range *handlers {
-		hasNext := false
-		if index != maxIndex {
-			hasNext = true
-		}
-		if !hasNext {
-			return val
-		}
+	for _, val := range *middleWares {
 		// TODO: Prevent Double execution
-		if next := val(res, req, prm, func() Handle { return (*handlers)[index+1] }); next == nil {
-			return val
+		if next := val(res, req, prm); !next {
+			return func(http.ResponseWriter, *http.Request, Params) {
+
+			}
 		}
 	}
-	return nil
-}
-
-//Mounter is basic router mount struct
-//Rather Than Creating mounter by hand use NewRoutes function which will return a pointer to Mounter
-type Mounter struct {
-	BasePath string
-	Routes   []*Route
+	return handler
 }
 
 //New creates the actual router instance
 //New must be called before mount which will receive the output of New function
 //Most of the times mounter function is required to be called once only
-func New() *rtr.Router {
-	var router = rtr.New()
-	return router
+func New() *ServerMux {
+	return &ServerMux{rtr.New()}
 }
 
 //NewRoutes creates the mounter which can be Exported from the package
-func NewRoutes(base string) (mounter *Mounter) {
-	mounter = &Mounter{
+func NewRoutes(base string) (mounter *RouterMux) {
+	mounter = &RouterMux{
 		BasePath: base,
 	}
 	return
 }
 
 //Mount mounts the divided routes to main router
-func (mounter *Mounter) Mount(router *rtr.Router) {
+func (mounter *RouterMux) Mount(router *ServerMux) {
 	mounter.BasePath = strings.TrimSuffix(mounter.BasePath, "/")
-	for _, route := range mounter.Routes {
-		fnc := route.Func
+	for _, route := range mounter.SubRoutes {
+		fnc := route.Handler
+		middleWares := route.MiddleWares
 		path := route.Path
 		if !strings.HasSuffix(path, "/") {
 			path += "/"
@@ -78,41 +53,49 @@ func (mounter *Mounter) Mount(router *rtr.Router) {
 		switch strings.ToLower(route.Method) {
 		case "get":
 			router.GET(path, func(res http.ResponseWriter, req *http.Request, params rtr.Params) {
-				iterateMiddleWare(&fnc,res,req,params)(res,req,params,nil)
+
+				iterateMiddleWare(&middleWares, fnc, res, req, httpRouterParamsToExpressParams(params))(res, req, httpRouterParamsToExpressParams(params))
 			})
 		case "post":
 			router.POST(path, func(res http.ResponseWriter, req *http.Request, params rtr.Params) {
-				iterateMiddleWare(&fnc,res,req,params)(res,req,params,nil)
+				iterateMiddleWare(&middleWares, fnc, res, req, httpRouterParamsToExpressParams(params))(res, req, httpRouterParamsToExpressParams(params))
 			})
 		case "delete":
 			router.DELETE(path, func(res http.ResponseWriter, req *http.Request, params rtr.Params) {
-				iterateMiddleWare(&fnc,res,req,params)(res,req,params,nil)
+				iterateMiddleWare(&middleWares, fnc, res, req, httpRouterParamsToExpressParams(params))(res, req, httpRouterParamsToExpressParams(params))
 			})
 		case "put":
 			router.PUT(path, func(res http.ResponseWriter, req *http.Request, params rtr.Params) {
-				iterateMiddleWare(&fnc,res,req,params)(res,req,params,nil)
+				iterateMiddleWare(&middleWares, fnc, res, req, httpRouterParamsToExpressParams(params))(res, req, httpRouterParamsToExpressParams(params))
 			})
 		}
 	}
 }
 
 //GET request handler
-func (mounter *Mounter) GET(path string, Funcs ...Handle) {
+func (mounter *RouterMux) GET(path string, handler Handle, middlewares ...MiddleWare) {
 
-	mounter.Routes = append(mounter.Routes, &Route{path, "get", Funcs})
+	mounter.SubRoutes = append(mounter.SubRoutes, &route{path, "get", middlewares, handler})
 }
 
 //POST request handler
-func (mounter *Mounter) POST(path string, Funcs ...Handle) {
-	mounter.Routes = append(mounter.Routes, &Route{path, "post", Funcs})
+func (mounter *RouterMux) POST(path string, handler Handle, middlewares ...MiddleWare) {
+	mounter.SubRoutes = append(mounter.SubRoutes, &route{path, "post", middlewares, handler})
 }
 
 //PUT request handler
-func (mounter *Mounter) PUT(path string, Funcs ...Handle) {
-	mounter.Routes = append(mounter.Routes, &Route{path, "put", Funcs})
+func (mounter *RouterMux) PUT(path string, handler Handle, middlewares ...MiddleWare) {
+	mounter.SubRoutes = append(mounter.SubRoutes, &route{path, "put", middlewares, handler})
 }
 
 //DELETE request handler
-func (mounter *Mounter) DELETE(path string, Funcs ...Handle) {
-	mounter.Routes = append(mounter.Routes, &Route{path, "delete", Funcs})
+func (mounter *RouterMux) DELETE(path string, handler Handle, middlewares ...MiddleWare) {
+	mounter.SubRoutes = append(mounter.SubRoutes, &route{path, "delete", middlewares, handler})
+}
+func httpRouterParamsToExpressParams(params rtr.Params) Params {
+	expressParams := make(map[string]string)
+	for _, param := range params {
+		expressParams[param.Key] = param.Value
+	}
+	return expressParams
 }
