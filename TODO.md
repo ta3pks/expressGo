@@ -1,7 +1,7 @@
 Bugs
 =
-* [ ] Prevent Double execution on early exited middlewares
+* [X] *~~Prevent Double execution on early exited middlewares~~*
 
 TODOS
 =
-* [ ] Make handler signature simpler by seperating the middlewares and handlers
+* [X] *~~Make handler signature simpler by seperating the middlewares and handlers~~*
