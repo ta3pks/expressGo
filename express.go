@@ -14,7 +14,7 @@ func iterateMiddleWare(middleWares *[]MiddleWare, handler Handle, res http.Respo
 		return handler
 	}
 	for _, val := range *middleWares {
-		// TODO: Prevent Double execution
+		// TODO:[X] Prevent Double execution
 		if next := val(res, req, prm); !next {
 			return func(http.ResponseWriter, *http.Request, Params) {
 
