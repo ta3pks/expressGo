@@ -9,7 +9,7 @@ import (
 
 //__ROUTER
 
-func iterateMiddleWare(middleWares *[]MiddleWare, handler Handle, res http.ResponseWriter, req *http.Request, prm Params) Handle {
+func iterateMiddleWare(middleWares *[]MiddleWare, handler Handle, res http.ResponseWriter, req *http.Request, prm *Params) Handle {
 	if len(*middleWares) == 0 {
 		return handler
 	}
@@ -53,20 +53,23 @@ func (mounter *RouterMux) Mount(router *ServerMux) {
 		switch strings.ToLower(route.Method) {
 		case "get":
 			router.GET(path, func(res http.ResponseWriter, req *http.Request, params rtr.Params) {
-
-				iterateMiddleWare(&middleWares, fnc, res, req, httpRouterParamsToExpressParams(params))(res, req, httpRouterParamsToExpressParams(params))
+				prm := httpRouterParamsToExpressParams(params)
+				iterateMiddleWare(&middleWares, fnc, res, req,&prm)(res, req,prm)
 			})
 		case "post":
 			router.POST(path, func(res http.ResponseWriter, req *http.Request, params rtr.Params) {
-				iterateMiddleWare(&middleWares, fnc, res, req, httpRouterParamsToExpressParams(params))(res, req, httpRouterParamsToExpressParams(params))
+				prm := httpRouterParamsToExpressParams(params)
+				iterateMiddleWare(&middleWares, fnc, res, req,&prm)(res, req,prm)
 			})
 		case "delete":
 			router.DELETE(path, func(res http.ResponseWriter, req *http.Request, params rtr.Params) {
-				iterateMiddleWare(&middleWares, fnc, res, req, httpRouterParamsToExpressParams(params))(res, req, httpRouterParamsToExpressParams(params))
+				prm := httpRouterParamsToExpressParams(params)
+				iterateMiddleWare(&middleWares, fnc, res, req,&prm)(res, req,prm)
 			})
 		case "put":
 			router.PUT(path, func(res http.ResponseWriter, req *http.Request, params rtr.Params) {
-				iterateMiddleWare(&middleWares, fnc, res, req, httpRouterParamsToExpressParams(params))(res, req, httpRouterParamsToExpressParams(params))
+				prm := httpRouterParamsToExpressParams(params)
+				iterateMiddleWare(&middleWares, fnc, res, req,&prm)(res, req,prm)
 			})
 		}
 	}

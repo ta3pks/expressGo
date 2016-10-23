@@ -30,7 +30,7 @@ type Params map[string]string
 
 //MiddleWare functions can be chained and executed before the request handler is executed
 //Middlewares are great to do things like password control etc. instead of writing the same thign all the time
-type MiddleWare func(http.ResponseWriter, *http.Request, Params) bool
+type MiddleWare func(http.ResponseWriter, *http.Request, *Params) bool
 
 //Handle Handles the request
 type Handle func(http.ResponseWriter, *http.Request, Params)
