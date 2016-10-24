@@ -5,4 +5,4 @@ Bugs
 TODOS
 =
 * [X] *~~Make handler signature simpler by seperating the middlewares and handlers~~*
-* [ ] "Support passing arguments from middlewares to params object
+* [X] *~~"Support passing arguments from middlewares to params object~~*
